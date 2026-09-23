@@ -23,6 +23,7 @@ class KreysetuApp extends StatelessWidget {
   }
 }
 
+// ---------------- LOGIN SCREEN ----------------
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -57,9 +58,14 @@ class _LoginScreenState extends State<LoginScreen> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        setState(() {
-          message = 'Login Successful! Welcome ${data['user']['name']}';
-        });
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HomeScreen(user: data['user']),
+            ),
+          );
+        }
       } else {
         setState(() {
           message = data['error'] ?? 'Login failed';
@@ -138,11 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
               if (message.isNotEmpty)
                 Text(
                   message,
-                  style: TextStyle(
-                    color: message.contains('Successful')
-                        ? Colors.green
-                        : Colors.red,
-                  ),
+                  style: const TextStyle(color: Colors.red),
                 ),
             ],
           ),
@@ -152,6 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
+// ---------------- SIGNUP SCREEN ----------------
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -303,6 +306,122 @@ class _SignupScreenState extends State<SignupScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ---------------- HOME SCREEN (PRODUCTS LIST) ----------------
+class HomeScreen extends StatefulWidget {
+  final Map<String, dynamic> user;
+  const HomeScreen({super.key, required this.user});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final String baseUrl = "http://127.0.0.1:5000/api";
+  List products = [];
+  bool isLoading = true;
+  String errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/products/'));
+
+      if (response.statusCode == 200) {
+        setState(() {
+          products = jsonDecode(response.body);
+        });
+      } else {
+        setState(() {
+          errorMessage = 'Failed to load products';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error: Could not connect to server';
+      });
+    }
+
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Kreysetu'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              );
+            },
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: fetchProducts,
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage.isNotEmpty
+                ? Center(child: Text(errorMessage))
+                : products.isEmpty
+                    ? const Center(child: Text('No products available yet.'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          final product = products[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.all(12),
+                              leading: const Icon(
+                                Icons.shopping_bag,
+                                size: 40,
+                                color: Colors.deepPurple,
+                              ),
+                              title: Text(
+                                product['name'] ?? '',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${product['description'] ?? ''}\nStock: ${product['stock']}',
+                              ),
+                              trailing: Text(
+                                '₹${product['price']}',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: Colors.deepPurple,
+                                ),
+                              ),
+                              isThreeLine: true,
+                            ),
+                          );
+                        },
+                      ),
       ),
     );
   }
