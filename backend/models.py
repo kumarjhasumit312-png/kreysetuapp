@@ -28,14 +28,28 @@ class Product(db.Model):
     stock = db.Column(db.Integer, default=0)
     category = db.Column(db.String(50), nullable=True)
     image_url = db.Column(db.String(255), nullable=True)
+    expiry_date = db.Column(db.String(20), nullable=True)
+    discount_price = db.Column(db.Float, nullable=True)
+    listing_type = db.Column(db.String(10), nullable=False, default='new')  # 'new' ya 'used'
+    item_condition = db.Column(db.String(20), nullable=True)                # Like New / Good / Fair
+    city = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
         return {
-            "id": self.id, "seller_id": self.seller_id, "name": self.name,
-            "description": self.description, "price": self.price,
-            "stock": self.stock, "category": self.category,
-            "image_url": self.image_url
+            "id": self.id,
+            "seller_id": self.seller_id,
+            "name": self.name,
+            "description": self.description,
+            "price": self.price,
+            "stock": self.stock,
+            "category": self.category,
+            "image_url": self.image_url,
+            "expiry_date": self.expiry_date,
+            "discount_price": self.discount_price,
+            "listing_type": self.listing_type,
+            "item_condition": self.item_condition,
+            "city": self.city
         }
 
 
